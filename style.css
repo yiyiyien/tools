@@ -145,8 +145,8 @@ input[type="datetime-local"]:focus {
 
 .result-row {
   display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.2fr) auto;
-  gap: 12px;
+  grid-template-columns: minmax(220px, 1.25fr) minmax(0, 1fr);
+  gap: 24px;
   align-items: center;
   min-height: 64px;
   padding: 12px 14px;
@@ -158,7 +158,7 @@ input[type="datetime-local"]:focus {
 
 .result-source {
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 0.88rem;
   line-height: 1.45;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   overflow-wrap: anywhere;
