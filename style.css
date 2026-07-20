@@ -109,8 +109,9 @@ input[type="datetime-local"] {
 
 textarea {
   min-height: 136px;
-  padding: 16px 16px;
-  resize: vertical;
+  max-height: 136px;
+  padding: 12px 12px;
+  resize: none;
   font-size: 1rem;
 }
 
@@ -123,16 +124,17 @@ input[type="datetime-local"]:focus {
 
 .result-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .result-row {
   display: grid;
   grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.2fr) auto;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  min-height: 78px;
-  padding: 16px 18px;
+  min-height: 64px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
