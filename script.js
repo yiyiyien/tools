@@ -15,43 +15,128 @@ const formatter = new Intl.DateTimeFormat("zh-CN", {
   hour12: false,
 });
 
-function onlyDigits(value) {
-  return value.replace(/\D/g, "");
-}
-
-function extractDigitsFromLine(line) {
-  // Normalize fullwidth digits (０-９) to ASCII digits
+function normalizeDigits(line) {
   const normalized = line.replace(/[\uFF10-\uFF19]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xFF10 + 48)
   );
 
-  // Find all contiguous sequences of digits and comma-like chars
-  const commaMatches = normalized.match(/[0-9,，\uFF0C\u3001]{9,}/g) || [];
-  for (const m of commaMatches) {
-    const cleaned = m.replace(/[,，\uFF0C\u3001]/g, "");
-    if (/^\d+$/.test(cleaned) && cleaned.length >= 9 && cleaned.startsWith("1784")) return cleaned;
-  }
-
-  // Fallback: check individual pure digit runs for one that starts with 1784
-  const runs = normalized.match(/\d+/g) || [];
-  for (const r of runs) {
-    if (r.length >= 9 && r.startsWith("1784")) return r;
-  }
-
-  // As a final attempt, join all runs and check if result starts with 1784
-  const joined = runs.join("");
-  if (joined.length >= 9 && joined.startsWith("1784")) return joined;
-
-  return "";
+  return normalized.replace(/[，\uFF0C\u3001]/g, ",");
 }
 
-function detectTimestampType(digits) {
-  if (digits.length < 13) {
-    const normalizedDigits = digits.padEnd(13, "0");
-    return { type: "秒级", milliseconds: Number(normalizedDigits) };
+function isDigit(ch) {
+  return ch >= "0" && ch <= "9";
+}
+
+function isAsciiLetter(ch) {
+  return (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z");
+}
+
+function isTimestampSeparator(ch) {
+  return ch === "," || ch === "_";
+}
+
+function hasSupportedTimestampLength(value) {
+  return /^\d{10,13}$/.test(value);
+}
+
+function extractTimestampCandidates(line) {
+  const normalized = normalizeDigits(line);
+  const candidates = [];
+  const seen = new Set();
+
+  function addCandidate(candidate) {
+    const digits = candidate.replace(/[,\s_]/g, "");
+
+    if (hasSupportedTimestampLength(digits) && !seen.has(candidate)) {
+      seen.add(candidate);
+      candidates.push(candidate);
+    }
   }
 
-  return { type: "毫秒级", milliseconds: Number(digits.slice(0, 13)) };
+  for (let start = 0; start < normalized.length; start++) {
+    const previous = normalized[start - 1] || "";
+
+    if (
+      !isDigit(normalized[start]) ||
+      isDigit(previous) ||
+      isAsciiLetter(previous) ||
+      isTimestampSeparator(previous)
+    ) {
+      continue;
+    }
+
+    let candidate = "";
+    let digitCount = 0;
+
+    for (let end = start; end < normalized.length; end++) {
+      const ch = normalized[end];
+
+      if (isDigit(ch)) {
+        digitCount += 1;
+      } else if (isTimestampSeparator(ch)) {
+        // Keep scanning through numeric separators.
+      } else {
+        break;
+      }
+
+      candidate += ch;
+
+      if (digitCount > 13) {
+        break;
+      }
+
+      const next = normalized[end + 1] || "";
+      const digits = candidate.replace(/[,\s_]/g, "");
+
+      if (
+        isDigit(ch) &&
+        hasSupportedTimestampLength(digits) &&
+        !isDigit(next) &&
+        !isAsciiLetter(next) &&
+        !isTimestampSeparator(next)
+      ) {
+        addCandidate(candidate);
+      }
+    }
+  }
+
+  const spacedTimestampPattern = /(?:^|[^\dA-Za-z])(\d{1,4}(?:\s+\d{1,4}){2,6})(?=$|[^\dA-Za-z])/g;
+  let match;
+
+  while ((match = spacedTimestampPattern.exec(normalized)) !== null) {
+    addCandidate(match[1]);
+  }
+
+  return candidates;
+}
+
+function detectTimestampType(candidate) {
+  const digits = candidate.replace(/[,\s_]/g, "");
+  const secondsDigits = digits.slice(0, 10);
+
+  if (/^\d{10,13}$/.test(digits)) {
+    return {
+      type: "秒级",
+      digits: secondsDigits,
+      milliseconds: Number(secondsDigits) * 1000,
+      note: "",
+    };
+  }
+
+  return null;
+}
+
+function isReasonableTimestamp(milliseconds) {
+  const date = new Date(milliseconds);
+  const min = new Date("2000-01-01T00:00:00Z").getTime();
+  const max = Date.now() + 365 * 24 * 60 * 60 * 1000;
+
+  return (
+    Number.isFinite(milliseconds) &&
+    !Number.isNaN(date.getTime()) &&
+    milliseconds >= min &&
+    milliseconds <= max
+  );
 }
 
 function renderEmpty(target) {
@@ -111,27 +196,22 @@ function updateTimestampResults() {
   }
 
   const rows = lines
-    .map((line) => {
-      const digits = extractDigitsFromLine(line);
+    .flatMap((line) => {
+      return extractTimestampCandidates(line)
+        .map((candidate) => {
+          const parsed = detectTimestampType(candidate);
 
-      // silently skip lines that don't contain any plausible timestamp digits
-      if (!digits || digits.length < 9) return null;
+          if (!parsed || !isReasonableTimestamp(parsed.milliseconds)) {
+            return null;
+          }
 
-      // Only treat sequences beginning with '1784' as timestamps
-      if (!digits.startsWith("1784")) return null;
-
-      const { type, milliseconds } = detectTimestampType(digits);
-      const date = new Date(milliseconds);
-
-      if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) {
-        return null;
-      }
-
-      return {
-        label: line,
-        value: formatLocal(date),
-        note: type === "毫秒级" ? "" : type,
-      };
+          return {
+            label: line,
+            value: formatLocal(new Date(parsed.milliseconds)),
+            note: parsed.note,
+          };
+        })
+        .filter(Boolean);
     })
     .filter(Boolean);
 

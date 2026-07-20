@@ -158,7 +158,8 @@ input[type="datetime-local"]:focus {
 
 .result-source {
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 1rem;
+  line-height: 1.45;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   overflow-wrap: anywhere;
   max-width: 100%;
@@ -174,7 +175,7 @@ input[type="datetime-local"]:focus {
   display: block;
   color: var(--text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 1.05rem;
+  font-size: 1rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
   max-width: 100%;
