@@ -32,10 +32,6 @@ function renderEmpty(target) {
   target.innerHTML = "";
 }
 
-function renderError(target, message) {
-  target.innerHTML = `<div class="error-state">${message}</div>`;
-}
-
 function renderRows(target, rows) {
   target.innerHTML = "";
 
@@ -88,42 +84,28 @@ function updateTimestampResults() {
     return;
   }
 
-  const rows = lines.map((line) => {
-    const digits = onlyDigits(line);
+  const rows = lines
+    .map((line) => {
+      const digits = onlyDigits(line);
 
-    if (!digits) {
-      return {
-        label: line || "空行",
-        value: "无效时间戳",
-        note: "",
-      };
-    }
+      if (!digits || digits.length < 9) {
+        return null;
+      }
 
-    if (digits.length < 9) {
-      return {
-        label: line,
-        value: "时间戳太短",
-        note: "",
-      };
-    }
+      const { type, milliseconds } = detectTimestampType(digits);
+      const date = new Date(milliseconds);
 
-    const { type, milliseconds } = detectTimestampType(digits);
-    const date = new Date(milliseconds);
+      if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) {
+        return null;
+      }
 
-    if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) {
       return {
         label: line,
-        value: "无法转换",
-        note: "",
+        value: formatLocal(date),
+        note: type === "毫秒级" ? "" : type,
       };
-    }
-
-    return {
-      label: line,
-      value: formatLocal(date),
-      note: type === "毫秒级" ? "" : type,
-    };
-  });
+    })
+    .filter(Boolean);
 
   renderRows(timestampResults, rows);
 }
