@@ -19,11 +19,30 @@ function onlyDigits(value) {
   return value.replace(/\D/g, "");
 }
 
-function normalizeDigitsFromLine(line) {
-  // allow commas and spaces as separators, but require at least 9 numeric chars
-  const cleaned = line.replace(/[ ,\t\u00A0]/g, "");
-  if (!/^\d+$/.test(cleaned)) return "";
-  return cleaned;
+function extractDigitsFromLine(line) {
+  // Normalize fullwidth digits (０-９) to ASCII digits
+  const normalized = line.replace(/[\uFF10-\uFF19]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xFF10 + 48)
+  );
+
+  // Find all contiguous sequences of digits and comma-like chars
+  const commaMatches = normalized.match(/[0-9,，\uFF0C\u3001]{9,}/g) || [];
+  for (const m of commaMatches) {
+    const cleaned = m.replace(/[,，\uFF0C\u3001]/g, "");
+    if (/^\d+$/.test(cleaned) && cleaned.length >= 9 && cleaned.startsWith("1784")) return cleaned;
+  }
+
+  // Fallback: check individual pure digit runs for one that starts with 1784
+  const runs = normalized.match(/\d+/g) || [];
+  for (const r of runs) {
+    if (r.length >= 9 && r.startsWith("1784")) return r;
+  }
+
+  // As a final attempt, join all runs and check if result starts with 1784
+  const joined = runs.join("");
+  if (joined.length >= 9 && joined.startsWith("1784")) return joined;
+
+  return "";
 }
 
 function detectTimestampType(digits) {
@@ -93,10 +112,13 @@ function updateTimestampResults() {
 
   const rows = lines
     .map((line) => {
-      const digits = normalizeDigitsFromLine(line);
+      const digits = extractDigitsFromLine(line);
 
-      // silently skip lines that aren't purely numeric after normalization
+      // silently skip lines that don't contain any plausible timestamp digits
       if (!digits || digits.length < 9) return null;
+
+      // Only treat sequences beginning with '1784' as timestamps
+      if (!digits.startsWith("1784")) return null;
 
       const { type, milliseconds } = detectTimestampType(digits);
       const date = new Date(milliseconds);
