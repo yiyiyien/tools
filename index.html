@@ -16,12 +16,17 @@
       </section>
 
       <section class="tool-grid" aria-label="时间转换工具">
-        <article class="panel">
+        <article class="panel panel-main">
           <div class="panel-heading">
             <h2>时间戳转时间</h2>
-            <button class="icon-button" id="clearTimestamp" type="button" title="清空时间戳输入" aria-label="清空时间戳输入">
-              清空
-            </button>
+            <div class="panel-actions">
+              <button class="primary-button" id="pasteTimestamp" type="button" title="粘贴时间戳" aria-label="粘贴时间戳">
+                粘贴
+              </button>
+              <button class="icon-button" id="clearTimestamp" type="button" title="清空时间戳输入" aria-label="清空时间戳输入">
+                清空
+              </button>
+            </div>
           </div>
 
           <label class="field-label" for="timestampInput">输入时间戳</label>
@@ -33,41 +38,18 @@
             spellcheck="false"
           ></textarea>
 
-          <div class="meta-row">
-            <span>清理后</span>
-            <code id="cleanedTimestamp">-</code>
-          </div>
-
-          <div class="result-list" id="timestampResults" aria-live="polite">
-            <div class="empty-state">等待输入。</div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-heading">
-            <h2>时间转时间戳</h2>
-            <button class="icon-button" id="useNow" type="button" title="使用当前时间" aria-label="使用当前时间">
-              当前
-            </button>
-          </div>
-
-          <label class="field-label" for="datetimeInput">日期时间</label>
-          <input id="datetimeInput" type="datetime-local" />
-
-          <div class="result-list" id="datetimeResults" aria-live="polite">
-            <div class="empty-state">等待选择。</div>
-          </div>
+          <div class="result-list" id="timestampResults" aria-live="polite"></div>
         </article>
       </section>
     </main>
 
     <template id="resultRowTemplate">
       <div class="result-row">
-        <div>
-          <span class="result-label"></span>
+        <div class="result-source"></div>
+        <div class="result-main">
           <strong class="result-value"></strong>
+          <div class="result-note"></div>
         </div>
-        <button class="copy-button" type="button">复制</button>
       </div>
     </template>
 
