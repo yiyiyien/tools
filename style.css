@@ -39,17 +39,6 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Prevent the viewport scrollbar from appearing and shifting layout.
-   Make the main app shell scroll internally instead. */
-.app-shell {
-  width: min(1120px, calc(100% - 32px));
-  margin: 0;
-  padding: 0;
-  max-height: calc(100vh - 64px);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
-
 button,
 input,
 textarea {
