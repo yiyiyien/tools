@@ -50,6 +50,22 @@ function renderRows(target, rows) {
   });
 }
 
+function handlePaste(event) {
+  const text = event.clipboardData?.getData("text/plain") || "";
+  if (!text) {
+    return;
+  }
+
+  event.preventDefault();
+  const start = timestampInput.selectionStart ?? timestampInput.value.length;
+  const end = timestampInput.selectionEnd ?? timestampInput.value.length;
+  const nextValue = `${timestampInput.value.slice(0, start)}${text}${timestampInput.value.slice(end)}`;
+  timestampInput.value = nextValue;
+  const cursorPosition = start + text.length;
+  timestampInput.setSelectionRange(cursorPosition, cursorPosition);
+  updateTimestampResults();
+}
+
 function formatLocal(date) {
   return formatter.format(date);
 }
@@ -123,16 +139,34 @@ function showToast(message) {
 }
 
 timestampInput.addEventListener("input", updateTimestampResults);
+timestampInput.addEventListener("paste", handlePaste);
 
 pasteTimestamp.addEventListener("click", async () => {
+  timestampInput.focus();
+
   try {
-    const text = await navigator.clipboard.readText();
-    timestampInput.value = text;
-    updateTimestampResults();
-    timestampInput.focus();
+    if (navigator.clipboard?.readText) {
+      const text = await navigator.clipboard.readText();
+      if (typeof text === "string" && text) {
+        timestampInput.value = text;
+        updateTimestampResults();
+        return;
+      }
+    }
   } catch {
-    showToast("无法读取剪贴板内容");
+    // fallback below
   }
+
+  try {
+    if (typeof document.execCommand === "function") {
+      document.execCommand("paste");
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  showToast("请允许读取剪贴板内容后再试");
 });
 
 clearTimestamp.addEventListener("click", () => {
