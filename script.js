@@ -1,12 +1,9 @@
 const timestampInput = document.querySelector("#timestampInput");
-const cleanedTimestamp = document.querySelector("#cleanedTimestamp");
 const timestampResults = document.querySelector("#timestampResults");
-const datetimeInput = document.querySelector("#datetimeInput");
-const datetimeResults = document.querySelector("#datetimeResults");
 const rowTemplate = document.querySelector("#resultRowTemplate");
 const toast = document.querySelector("#toast");
+const pasteTimestamp = document.querySelector("#pasteTimestamp");
 const clearTimestamp = document.querySelector("#clearTimestamp");
-const useNow = document.querySelector("#useNow");
 
 const formatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",
@@ -23,19 +20,16 @@ function onlyDigits(value) {
 }
 
 function detectTimestampType(digits) {
-  if (digits.length <= 10) {
-    return { type: "秒级", milliseconds: Number(digits) * 1000 };
-  }
-
-  if (digits.length <= 13) {
-    return { type: "毫秒级", milliseconds: Number(digits) };
+  if (digits.length < 13) {
+    const normalizedDigits = digits.padEnd(13, "0");
+    return { type: "秒级", milliseconds: Number(normalizedDigits) };
   }
 
   return { type: "毫秒级", milliseconds: Number(digits.slice(0, 13)) };
 }
 
-function renderEmpty(target, message) {
-  target.innerHTML = `<div class="empty-state">${message}</div>`;
+function renderEmpty(target) {
+  target.innerHTML = "";
 }
 
 function renderError(target, message) {
@@ -45,11 +39,13 @@ function renderError(target, message) {
 function renderRows(target, rows) {
   target.innerHTML = "";
 
-  rows.forEach(({ label, value }) => {
+  rows.forEach(({ label, value, note }) => {
     const row = rowTemplate.content.cloneNode(true);
-    row.querySelector(".result-label").textContent = label;
+    const noteEl = row.querySelector(".result-note");
+    row.querySelector(".result-source").textContent = label;
     row.querySelector(".result-value").textContent = value;
-    row.querySelector(".copy-button").dataset.copyValue = value;
+    noteEl.textContent = note || "";
+    noteEl.style.display = note ? "block" : "none";
     target.appendChild(row);
   });
 }
@@ -60,75 +56,60 @@ function formatLocal(date) {
 
 function updateTimestampResults() {
   const rawValue = timestampInput.value.trim();
-  const digits = onlyDigits(rawValue);
-  cleanedTimestamp.textContent = digits || "-";
 
   if (!rawValue) {
-    renderEmpty(timestampResults, "输入时间戳后会在这里显示转换结果。");
+    renderEmpty(timestampResults);
     return;
   }
 
-  if (!digits) {
-    renderError(timestampResults, "没有找到数字，请输入有效的时间戳。");
+  const lines = rawValue
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) {
+    renderEmpty(timestampResults);
     return;
   }
 
-  if (digits.length < 9) {
-    renderError(timestampResults, "时间戳太短，请检查是否输入完整。");
-    return;
-  }
+  const rows = lines.map((line) => {
+    const digits = onlyDigits(line);
 
-  const { type, milliseconds } = detectTimestampType(digits);
-  const date = new Date(milliseconds);
+    if (!digits) {
+      return {
+        label: line || "空行",
+        value: "无效时间戳",
+        note: "",
+      };
+    }
 
-  if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) {
-    renderError(timestampResults, "这个时间戳无法转换，请检查输入内容。");
-    return;
-  }
+    if (digits.length < 9) {
+      return {
+        label: line,
+        value: "时间戳太短",
+        note: "",
+      };
+    }
 
-  renderRows(timestampResults, [
-    { label: "时间戳类型", value: type },
-    { label: "本地时间", value: formatLocal(date) },
-    { label: "UTC 时间", value: date.toUTCString() },
-    { label: "ISO 格式", value: date.toISOString() },
-  ]);
-}
+    const { type, milliseconds } = detectTimestampType(digits);
+    const date = new Date(milliseconds);
 
-function setDatetimeValue(date) {
-  const timezoneOffset = date.getTimezoneOffset() * 60000;
-  const localDate = new Date(date.getTime() - timezoneOffset);
-  datetimeInput.value = localDate.toISOString().slice(0, 16);
-}
+    if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) {
+      return {
+        label: line,
+        value: "无法转换",
+        note: "",
+      };
+    }
 
-function updateDatetimeResults() {
-  const value = datetimeInput.value;
+    return {
+      label: line,
+      value: formatLocal(date),
+      note: type === "毫秒级" ? "" : type,
+    };
+  });
 
-  if (!value) {
-    renderEmpty(datetimeResults, "选择日期时间后会显示秒级和毫秒级时间戳。");
-    return;
-  }
-
-  const milliseconds = new Date(value).getTime();
-
-  if (!Number.isFinite(milliseconds)) {
-    renderError(datetimeResults, "这个日期时间无法转换，请重新选择。");
-    return;
-  }
-
-  renderRows(datetimeResults, [
-    { label: "秒级时间戳", value: String(Math.floor(milliseconds / 1000)) },
-    { label: "毫秒级时间戳", value: String(milliseconds) },
-    { label: "ISO 格式", value: new Date(milliseconds).toISOString() },
-  ]);
-}
-
-async function copyText(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    showToast("已复制");
-  } catch {
-    showToast("复制失败，请手动复制");
-  }
+  renderRows(timestampResults, rows);
 }
 
 let toastTimer;
@@ -141,15 +122,18 @@ function showToast(message) {
   }, 1800);
 }
 
-document.addEventListener("click", (event) => {
-  const copyButton = event.target.closest(".copy-button");
-  if (copyButton) {
-    copyText(copyButton.dataset.copyValue);
+timestampInput.addEventListener("input", updateTimestampResults);
+
+pasteTimestamp.addEventListener("click", async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    timestampInput.value = text;
+    updateTimestampResults();
+    timestampInput.focus();
+  } catch {
+    showToast("无法读取剪贴板内容");
   }
 });
-
-timestampInput.addEventListener("input", updateTimestampResults);
-datetimeInput.addEventListener("input", updateDatetimeResults);
 
 clearTimestamp.addEventListener("click", () => {
   timestampInput.value = "";
@@ -157,12 +141,4 @@ clearTimestamp.addEventListener("click", () => {
   timestampInput.focus();
 });
 
-useNow.addEventListener("click", () => {
-  setDatetimeValue(new Date());
-  updateDatetimeResults();
-});
-
-timestampInput.value = "1,784,512,772,868";
-setDatetimeValue(new Date());
 updateTimestampResults();
-updateDatetimeResults();
