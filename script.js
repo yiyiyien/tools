@@ -19,6 +19,13 @@ function onlyDigits(value) {
   return value.replace(/\D/g, "");
 }
 
+function normalizeDigitsFromLine(line) {
+  // allow commas and spaces as separators, but require at least 9 numeric chars
+  const cleaned = line.replace(/[ ,\t\u00A0]/g, "");
+  if (!/^\d+$/.test(cleaned)) return "";
+  return cleaned;
+}
+
 function detectTimestampType(digits) {
   if (digits.length < 13) {
     const normalizedDigits = digits.padEnd(13, "0");
@@ -86,11 +93,10 @@ function updateTimestampResults() {
 
   const rows = lines
     .map((line) => {
-      const digits = onlyDigits(line);
+      const digits = normalizeDigitsFromLine(line);
 
-      if (!digits || digits.length < 9) {
-        return null;
-      }
+      // silently skip lines that aren't purely numeric after normalization
+      if (!digits || digits.length < 9) return null;
 
       const { type, milliseconds } = detectTimestampType(digits);
       const date = new Date(milliseconds);
