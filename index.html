@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>时间戳转换工具</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Timestamp Converter</p>
+          <h1 id="page-title">时间戳转换</h1>
+        </div>
+      </section>
+
+      <section class="tool-grid" aria-label="时间转换工具">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>时间戳转时间</h2>
+            <button class="icon-button" id="clearTimestamp" type="button" title="清空时间戳输入" aria-label="清空时间戳输入">
+              清空
+            </button>
+          </div>
+
+          <label class="field-label" for="timestampInput">输入时间戳</label>
+          <textarea
+            id="timestampInput"
+            rows="4"
+            placeholder="输入时间戳"
+            autocomplete="off"
+            spellcheck="false"
+          ></textarea>
+
+          <div class="meta-row">
+            <span>清理后</span>
+            <code id="cleanedTimestamp">-</code>
+          </div>
+
+          <div class="result-list" id="timestampResults" aria-live="polite">
+            <div class="empty-state">等待输入。</div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>时间转时间戳</h2>
+            <button class="icon-button" id="useNow" type="button" title="使用当前时间" aria-label="使用当前时间">
+              当前
+            </button>
+          </div>
+
+          <label class="field-label" for="datetimeInput">日期时间</label>
+          <input id="datetimeInput" type="datetime-local" />
+
+          <div class="result-list" id="datetimeResults" aria-live="polite">
+            <div class="empty-state">等待选择。</div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <template id="resultRowTemplate">
+      <div class="result-row">
+        <div>
+          <span class="result-label"></span>
+          <strong class="result-value"></strong>
+        </div>
+        <button class="copy-button" type="button">复制</button>
+      </div>
+    </template>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
