@@ -157,22 +157,6 @@ function renderRows(target, rows) {
   });
 }
 
-function handlePaste(event) {
-  const text = event.clipboardData?.getData("text/plain") || "";
-  if (!text) {
-    return;
-  }
-
-  event.preventDefault();
-  const start = timestampInput.selectionStart ?? timestampInput.value.length;
-  const end = timestampInput.selectionEnd ?? timestampInput.value.length;
-  const nextValue = `${timestampInput.value.slice(0, start)}${text}${timestampInput.value.slice(end)}`;
-  timestampInput.value = nextValue;
-  const cursorPosition = start + text.length;
-  timestampInput.setSelectionRange(cursorPosition, cursorPosition);
-  updateTimestampResults();
-}
-
 function formatLocal(date) {
   return formatter.format(date);
 }
@@ -228,8 +212,19 @@ function showToast(message) {
   }, 1800);
 }
 
+function replaceInputValue(value) {
+  timestampInput.focus();
+  timestampInput.select();
+
+  if (typeof document.execCommand === "function" && document.execCommand("insertText", false, value)) {
+    return;
+  }
+
+  timestampInput.setRangeText(value, 0, timestampInput.value.length, "end");
+  updateTimestampResults();
+}
+
 timestampInput.addEventListener("input", updateTimestampResults);
-timestampInput.addEventListener("paste", handlePaste);
 
 pasteTimestamp.addEventListener("click", async () => {
   timestampInput.focus();
@@ -238,8 +233,7 @@ pasteTimestamp.addEventListener("click", async () => {
     if (navigator.clipboard?.readText) {
       const text = await navigator.clipboard.readText();
       if (typeof text === "string" && text) {
-        timestampInput.value = text;
-        updateTimestampResults();
+        replaceInputValue(text);
         return;
       }
     }
@@ -260,9 +254,7 @@ pasteTimestamp.addEventListener("click", async () => {
 });
 
 clearTimestamp.addEventListener("click", () => {
-  timestampInput.value = "";
-  updateTimestampResults();
-  timestampInput.focus();
+  replaceInputValue("");
 });
 
 updateTimestampResults();
