@@ -17,6 +17,15 @@
 ├── index.html
 ├── style.css
 ├── script.js
+├── assets/
+│   └── favicon/
+│       ├── favicon.ico
+│       ├── favicon-16x16.png
+│       ├── favicon-32x32.png
+│       ├── apple-touch-icon.png
+│       ├── android-chrome-192x192.png
+│       ├── android-chrome-512x512.png
+│       └── site.webmanifest
 └── README.md
 ```
 
@@ -27,7 +36,7 @@
 ## 部署到 GitHub Pages
 
 1. 新建一个 GitHub 仓库。
-2. 上传 `index.html`、`style.css`、`script.js` 和 `README.md`。
+2. 上传整个项目目录，包含 `assets/favicon/` 中的图标文件。
 3. 进入仓库的 `Settings`。
 4. 打开 `Pages`。
 5. 在 `Build and deployment` 中选择：
