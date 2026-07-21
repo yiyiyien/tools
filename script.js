@@ -4,6 +4,8 @@ const rowTemplate = document.querySelector("#resultRowTemplate");
 const toast = document.querySelector("#toast");
 const pasteTimestamp = document.querySelector("#pasteTimestamp");
 const clearTimestamp = document.querySelector("#clearTimestamp");
+const hiddenSourceTexts = ["[未知]", "［未知］"];
+const timestampInputStorageKey = "timestamp-tool.input";
 
 const formatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",
@@ -115,6 +117,13 @@ function extractErrorCodes(line) {
   return [...new Set(matches)];
 }
 
+function filterSourceLabel(line) {
+  return hiddenSourceTexts
+    .reduce((text, hiddenText) => text.replaceAll(hiddenText, ""), line)
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function detectTimestampType(candidate) {
   const digits = candidate.replace(/[,\s_]/g, "");
   const secondsDigits = digits.slice(0, 10);
@@ -200,7 +209,7 @@ function updateTimestampResults() {
           }
 
           return {
-            label: line,
+            label: filterSourceLabel(line),
             value: formatLocal(new Date(parsed.milliseconds)),
             note: parsed.note,
             errorCodes,
@@ -223,19 +232,45 @@ function showToast(message) {
   }, 1800);
 }
 
+function saveTimestampInput() {
+  try {
+    if (timestampInput.value) {
+      localStorage.setItem(timestampInputStorageKey, timestampInput.value);
+    } else {
+      localStorage.removeItem(timestampInputStorageKey);
+    }
+  } catch {
+    // Storage may be unavailable in private browsing or restricted environments.
+  }
+}
+
+function restoreTimestampInput() {
+  try {
+    timestampInput.value = localStorage.getItem(timestampInputStorageKey) || "";
+  } catch {
+    // Keep the input empty when storage is unavailable.
+  }
+}
+
+function handleInputChange() {
+  saveTimestampInput();
+  updateTimestampResults();
+}
+
 function replaceInputValue(value) {
   timestampInput.focus();
   timestampInput.select();
 
   if (typeof document.execCommand === "function" && document.execCommand("insertText", false, value)) {
+    handleInputChange();
     return;
   }
 
   timestampInput.setRangeText(value, 0, timestampInput.value.length, "end");
-  updateTimestampResults();
+  handleInputChange();
 }
 
-timestampInput.addEventListener("input", updateTimestampResults);
+timestampInput.addEventListener("input", handleInputChange);
 
 pasteTimestamp.addEventListener("click", async () => {
   timestampInput.focus();
@@ -268,4 +303,5 @@ clearTimestamp.addEventListener("click", () => {
   replaceInputValue("");
 });
 
+restoreTimestampInput();
 updateTimestampResults();
