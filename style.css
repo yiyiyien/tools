@@ -171,6 +171,13 @@ input[type="datetime-local"]:focus {
   gap: 4px;
 }
 
+.result-output {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+}
+
 .result-value {
   display: block;
   color: var(--text);
@@ -180,6 +187,14 @@ input[type="datetime-local"]:focus {
   overflow-wrap: anywhere;
   max-width: 100%;
   word-break: break-word;
+}
+
+.result-error-codes {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  font-weight: 400;
+  opacity: 0.72;
 }
 
 .result-note {

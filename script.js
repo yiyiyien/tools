@@ -110,6 +110,11 @@ function extractTimestampCandidates(line) {
   return candidates;
 }
 
+function extractErrorCodes(line) {
+  const matches = line.match(/\b0x[0-9a-f]{8}\b/gi) || [];
+  return [...new Set(matches)];
+}
+
 function detectTimestampType(candidate) {
   const digits = candidate.replace(/[,\s_]/g, "");
   const secondsDigits = digits.slice(0, 10);
@@ -146,11 +151,14 @@ function renderEmpty(target) {
 function renderRows(target, rows) {
   target.innerHTML = "";
 
-  rows.forEach(({ label, value, note }) => {
+  rows.forEach(({ label, value, note, errorCodes }) => {
     const row = rowTemplate.content.cloneNode(true);
     const noteEl = row.querySelector(".result-note");
+    const errorCodesEl = row.querySelector(".result-error-codes");
     row.querySelector(".result-source").textContent = label;
     row.querySelector(".result-value").textContent = value;
+    errorCodesEl.textContent = errorCodes.join(" ");
+    errorCodesEl.hidden = errorCodes.length === 0;
     noteEl.textContent = note || "";
     noteEl.style.display = note ? "block" : "none";
     target.appendChild(row);
@@ -181,6 +189,8 @@ function updateTimestampResults() {
 
   const rows = lines
     .flatMap((line) => {
+      const errorCodes = extractErrorCodes(line);
+
       return extractTimestampCandidates(line)
         .map((candidate) => {
           const parsed = detectTimestampType(candidate);
@@ -193,6 +203,7 @@ function updateTimestampResults() {
             label: line,
             value: formatLocal(new Date(parsed.milliseconds)),
             note: parsed.note,
+            errorCodes,
           };
         })
         .filter(Boolean);
