@@ -65,7 +65,7 @@ p {
 
 .panel {
   min-width: 0;
-  padding: 28px;
+  padding: 22px 28px 20px;
   border: 1px solid rgba(216, 222, 233, 0.9);
   border-radius: 16px;
   background: var(--panel);
@@ -81,7 +81,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 6px;
 }
 
 .panel-actions {
@@ -209,7 +209,7 @@ input[type="datetime-local"]:focus {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 800;
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .primary-button {
@@ -227,11 +227,7 @@ input[type="datetime-local"]:focus {
   padding: 0 13px;
   color: var(--accent);
   background: var(--accent-soft);
-}
-
-.primary-button:hover,
-.icon-button:hover {
-  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(168, 68, 60, 0.08);
 }
 
 .primary-button:focus-visible,
@@ -242,6 +238,24 @@ input[type="datetime-local"]:focus {
 
 .primary-button:hover {
   background: var(--primary-dark);
+  box-shadow: 0 12px 28px rgba(20, 108, 142, 0.24);
+}
+
+.icon-button:hover {
+  color: #8f352f;
+  background: #f2d8d3;
+  box-shadow: 0 8px 20px rgba(168, 68, 60, 0.14);
+}
+
+.primary-button:active {
+  background: #0c485f;
+  box-shadow: 0 5px 12px rgba(20, 108, 142, 0.2);
+}
+
+.icon-button:active {
+  color: #7c2c27;
+  background: #edcbc5;
+  box-shadow: 0 4px 10px rgba(168, 68, 60, 0.12);
 }
 
 .empty-state,
@@ -304,7 +318,7 @@ input[type="datetime-local"]:focus {
   }
 
   .panel {
-    padding: 18px;
+    padding: 16px 18px 14px;
   }
 
   .result-row {
